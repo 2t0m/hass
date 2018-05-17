@@ -57,12 +57,12 @@ class PioneerDevice(MediaPlayerDevice):
         self._host = host
         self._port = port
         self._timeout = timeout
-        self._pwstate = 'PWR2'
+        self._pwstate = 'PWR1'
         self._volume = 0
         self._muted = False
         self._selected_source = ''
-        self._source_name_to_number = {"TV":"05","Dator":"49","Spotify":"53"}
-        self._source_number_to_name = {"05":"TV","49":"Dator","53":"Spotify"}
+        self._source_name_to_number = {"TV":"06","GCast":"15"}
+        self._source_number_to_name = {"06":"TV","15":"GCast"}
 
     @classmethod
     def telnet_request(cls, telnet, command, expected_prefix):
@@ -115,19 +115,17 @@ class PioneerDevice(MediaPlayerDevice):
         if pwstate:
             self._pwstate = pwstate
 
-        volume_str = self.telnet_request(telnet, "?V", "VOL")
-        self._volume = int(volume_str[3:]) / MAX_VOLUME if volume_str else None
+        if pwstate == "PWR0":
+            volume_str = self.telnet_request(telnet, "?V", "VOL")
+            self._volume = int(volume_str[3:]) / MAX_VOLUME if volume_str else None
 
-        muted_value = self.telnet_request(telnet, "?M", "MUT")
-        self._muted = (muted_value == "MUT0") if muted_value else None
+            source_number = self.telnet_request(telnet, "?F", "FN")
 
-        source_number = self.telnet_request(telnet, "?F", "FN")
-
-        if source_number:
-            self._selected_source = self._source_number_to_name \
-                .get(source_number[2:])
-        else:
-            self._selected_source = None
+            if source_number:
+                self._selected_source = self._source_number_to_name \
+                    .get(source_number[2:])
+            else:
+                self._selected_source = None
 
         telnet.close()
         return True
